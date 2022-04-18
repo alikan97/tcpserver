@@ -1,19 +1,21 @@
 #include <cstdlib>
-#include "List.h"
 #include <iostream>
+#include <queue>
+#include <cstring>
+
+typedef struct message_t
+{
+    std::string message;
+    std::string datetime;
+}* message;
 
 int main (int argc, char** argv)
 {
-    List nums;
-    nums.AddNode(1);
-    nums.AddNode(2);
-    nums.AddNode(3);
-    nums.AddNode(4);
-    nums.AddNode(5);
-    nums.AddNode(6);
+    std::queue<message> myQueue;
+    message frs = new message_t;
+    frs->message = "First message";
+    frs->datetime = "2022/04/18";
+    myQueue.push(frs);
 
-    nums.PrintList();
-
-    nums.reverse();
-    nums.PrintList();
+    std::cout << myQueue.back()->message;
 }

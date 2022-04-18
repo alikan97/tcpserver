@@ -6,6 +6,8 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <string>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 
@@ -61,29 +63,14 @@ int main() {
 	    inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
 	    cout << host << " connected on " << ntohs(client.sin_port) << endl;
     }
+    
+    char buff[100] = "Hello from the other sideeee";
 
-    char buff[4096];
-    while(true)
-    {
-        // Clear the buffer
-        memset(buff,0, 4096);
-
-        // Wait for a message
-        int bytesRecv = recv(clientSocket, buff, 4096, 0);
-        if (bytesRecv == -1)
-        {
-            cerr << "There was a connection issue" << endl;
-            break;
-        }
-        if (bytesRecv == 0)
-        {
-            cout << "The client disconnected" << endl;
-            break;
-        }
-
-        cout << "Received: " << string(buff, 0, bytesRecv) << endl;
+    while (1) {
+        std::this_thread::sleep_for(1000);
         send(clientSocket, buff, bytesRecv + 1, 0);
     }
+
     close(clientSocket);
     return 0;
 }
