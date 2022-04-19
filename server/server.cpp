@@ -63,12 +63,16 @@ int main() {
 	    inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
 	    cout << host << " connected on " << ntohs(client.sin_port) << endl;
     }
-    
-    char buff[100] = "Hello from the other sideeee";
+
+    char buff[100];
 
     while (1) {
-        std::this_thread::sleep_for(1000);
-        send(clientSocket, buff, bytesRecv + 1, 0);
+	memset(buff, 0, 100);
+	cout << "Enter message to send" << endl;
+	cin >> buff;
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        send(clientSocket, buff,50, 0);
     }
 
     close(clientSocket);
