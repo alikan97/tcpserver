@@ -8,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <signal.h>
 
 using namespace std;
 
@@ -16,6 +17,15 @@ using namespace std;
 // Multithreading / multiClient
 // Resource allocation / memory mgmt
 // Sending structs in message
+
+void interrupt_handler(int clientSocket)
+{
+    std::cout << "Recevied Intertupt: Shutting Down!..." << endl;
+    sleep(1);
+    close(clientSocket);
+    exit(0);
+}
+void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc);
 
 int main()
 {
@@ -65,19 +75,11 @@ int main()
             return -4;
         }
 
-        std::thread th1(handleConnection, clientSocket, client, &host, &svc);
-    }
-
-    close(clientSocket);
+        std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc));
+	th1.join();
+    	close(clientSocket);
+	}
     return 0;
-}
-
-void interrupt_handler(int clientSocket)
-{
-    std::cout << "Recevied Intertupt: Shutting Down!..." << endl;
-    sleep(1);
-    close(clientSocket);
-    exit(0);
 }
 
 void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc)
