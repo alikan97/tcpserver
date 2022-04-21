@@ -75,10 +75,15 @@ int main()
             return -4;
         }
 
+        // pthread_t client_threadid;
+        // while ((client_sock = accept(server_sock, addr, addrlen)) != -1)
+        // {
+        //     pthread_create(&client_threadid, NULL, handle_connection, &client_sock);
+        // }
         std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc));
-	th1.join();
-    	close(clientSocket);
-	}
+        th1.join();
+        close(clientSocket);
+    }
     return 0;
 }
 
@@ -101,7 +106,7 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
     while (1)
     {
         memset(buff, 0, 4096);
-        int bytesRecv = recv(clientSocket, buff, 4096,0);
+        int bytesRecv = recv(clientSocket, buff, 4096, 0);
         if (bytesRecv == -1)
         {
             std::cout << "Connection issue" << std::endl;
@@ -116,7 +121,7 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
         cout << "Received " << string(buff, 0, bytesRecv) << endl;
 
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        send(clientSocket, buff, bytesRecv-1, 0);
+        send(clientSocket, buff, bytesRecv - 1, 0);
     }
     close(clientSocket);
 }
