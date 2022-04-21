@@ -9,8 +9,12 @@
 #include <thread>
 #include <chrono>
 #include <signal.h>
+#include <mutex>
+#include <queue>
 
 using namespace std;
+
+std::mutex globalMtx;
 
 // TODO
 // Create central queue
@@ -25,11 +29,13 @@ void interrupt_handler(int clientSocket)
     close(clientSocket);
     exit(0);
 }
-void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc);
+
+void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc, std::queue<std::string> *mq);
 
 int main()
 {
     int PORT = 5000;
+    std::queue<std::string> messageQueue;
 
     int listening = socket(AF_INET, SOCK_STREAM, 0);
     if (listening == -1)
@@ -68,27 +74,25 @@ int main()
         char host[NI_MAXHOST];
         char svc[NI_MAXSERV];
 
-        int clientSocket = accept(listening, (sockaddr *)&client, &clientSize);
-        if (clientSocket == -1)
+        int clientSocket;
+	int connectedClients = 0;
+
+        while ((clientSocket = accept(listening, (sockaddr *)&client, &clientSize)) != -1)
         {
-            cerr << "Problem with client connecting";
-            return -4;
+	    connectedClients++;
+	    std::cout << "Client accepted, Total number of connected clients: " << connectedClients << std::endl;
+	    std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc), std::ref(messageQueue));
+	    th1.detach();
         }
 
-        // pthread_t client_threadid;
-        // while ((client_sock = accept(server_sock, addr, addrlen)) != -1)
-        // {
-        //     pthread_create(&client_threadid, NULL, handle_connection, &client_sock);
-        // }
-        std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc));
-        th1.join();
         close(clientSocket);
     }
     return 0;
 }
 
-void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc)
+void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc, std::queue<std::string> *mq)
 {
+    std::cout << "New thread initiated..." << std::endl;
     memset(host, 0, NI_MAXHOST);
     memset(svc, 0, NI_MAXSERV);
 
@@ -105,6 +109,10 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
     char buff[4096];
     while (1)
     {
+	if (!mq->empty()) 
+	{
+		std::cout << "MessageQueue: " << mq->front() << std::endl;
+	}
         memset(buff, 0, 4096);
         int bytesRecv = recv(clientSocket, buff, 4096, 0);
         if (bytesRecv == -1)
@@ -118,10 +126,12 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
             break;
         }
 
-        cout << "Received " << string(buff, 0, bytesRecv) << endl;
+	std::string receivedString = string(buff, 0, bytesRecv);
+
+        cout << "Received " << receivedString << endl;
 
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        send(clientSocket, buff, bytesRecv - 1, 0);
+        mq->push(receivedString);
     }
     close(clientSocket);
 }
