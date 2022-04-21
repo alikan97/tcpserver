@@ -81,7 +81,7 @@ int main()
         {
 	    connectedClients++;
 	    std::cout << "Client accepted, Total number of connected clients: " << connectedClients << std::endl;
-	    std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc), std::ref(messageQueue));
+	    std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc), &messageQueue);
 	    th1.detach();
         }
 
@@ -109,10 +109,14 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
     char buff[4096];
     while (1)
     {
-	if (!mq->empty()) 
+	globalMtx.lock();
+	if (!mq->empty())
 	{
 		std::cout << "MessageQueue: " << mq->front() << std::endl;
+		mq->pop();
 	}
+	globalMtx.unlock();
+
         memset(buff, 0, 4096);
         int bytesRecv = recv(clientSocket, buff, 4096, 0);
         if (bytesRecv == -1)
@@ -131,7 +135,9 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
         cout << "Received " << receivedString << endl;
 
         std::this_thread::sleep_for(std::chrono::seconds(2));
+	globalMtx.lock();
         mq->push(receivedString);
+	globalMtx.unlock();
     }
     close(clientSocket);
 }
