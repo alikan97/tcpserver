@@ -33,7 +33,7 @@ void interrupt_handler(int clientSocket)
     exit(0);
 }
 
-void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc);
+void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc, std::queue<std::string> *messageQueue);
 
 int main()
 {
@@ -76,11 +76,13 @@ int main()
         char host[NI_MAXHOST];
         char svc[NI_MAXSERV];
 
+        std::queue<std::string> messageQueue;
+        
         int clientSocket;
 
         while ((clientSocket = accept(listening, (sockaddr *)&client, &clientSize)) != -1)
         {
-            std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc));
+            std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc), &messageQueue);
             th1.detach();
         }
         close(clientSocket);
@@ -89,18 +91,9 @@ int main()
     return 0;
 }
 
-void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc)
+void handleConnection(int clientSocket, sockaddr_in client, char *host, char *svc, std::queue<std::string> *messageQueue)
 {
     std::cout << "New thread initiated..." << std::endl;
-    int values[10] = {4,2,55,3,2,12,6,45,6,3};
-    std::queue<std::string> messageQueue;
-
-    messageQueue.push("First message");
-    messageQueue.push("Second Message");
-    messageQueue.push("Third message");
-    messageQueue.push("Fourth Message");
-    messageQueue.push("Fifth message");
-    messageQueue.push("Sixth Message");
 
     char newClient[26] = "Welcome to the server!";
     send(clientSocket, newClient, 21, 0);
@@ -118,12 +111,38 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
         inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
         cout << host << " connected on " << ntohs(client.sin_port) << endl;
     }
+    char buffer[4096];
 
-    while (!messageQueue.empty())
-    {
-        std::cout << messageQueue.size() << endl;
-        int bytes = send(clientSocket, messageQueue.front().c_str(), messageQueue.front().size(), 0);
-        messageQueue.pop();
+    while (1)
+    {   
+        memset(buffer, 0, 4096);
+        int bytesRecv = recv(clientSocket, buffer, 4096, 0);
+        if (bytesRecv == -1)
+        {
+            std::cout << "Connection issue" << std::endl;
+            break;
+        }
+        if (bytesRecv == 0)
+        {
+            std::cout << "Client disconnected" << std::endl;
+            break;
+        }
+
+        std::string receivedString = string(buffer);
+        cout << receivedString.length() << endl;
+        if (receivedString.find("Read", 0) != string::npos)
+        {
+            cout << "HITT" << endl;
+            while(!messageQueue->empty())
+            {
+                int bytes = send(clientSocket, messageQueue->front().c_str(), messageQueue->front().size(), 0);
+                messageQueue->pop();
+            }
+        } else
+        {
+            messageQueue->push(receivedString);
+        }
+        
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
     close(clientSocket);
