@@ -13,7 +13,8 @@
 #include <queue>
 #include "List.h"
 #include <algorithm>
-
+// Use when reading from raspberrypi GPIO Ports
+// #include <wiringPi.h>
 using namespace std;
 
 std::mutex globalMtx;
@@ -37,7 +38,7 @@ void handleConnection(int clientSocket, sockaddr_in client, char *host, char *sv
 int main()
 {
     int PORT = 5005;
-    
+
     int listening = socket(AF_INET, SOCK_STREAM, 0);
     if (listening == -1)
     {
@@ -82,9 +83,9 @@ int main()
             std::thread th1(handleConnection, clientSocket, client, std::ref(host), std::ref(svc));
             th1.detach();
         }
-
         close(clientSocket);
     }
+    close(listening);
     return 0;
 }
 
