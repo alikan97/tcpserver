@@ -35,5 +35,6 @@ class List {
 	int getSize();
 	bool isEmpty();
 	void reverse();
+	int getHead();
 };
 #endif

@@ -1,13 +1,12 @@
+#include "List.h"
 #include <cstdlib>
 #include <iostream>
 
-#include "List.h"
+/*
+	Implementation of singly linked list
+*/
 
 using namespace std;
-
-//TODO:
-// Convert to generic type
-// fix index
 
 List::List()
 {
